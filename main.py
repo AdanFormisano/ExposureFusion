@@ -14,6 +14,7 @@ def Constrast(img):
 
     return C
 
+# TODO: sposta sigma dentro a exponential_euclidean
 def SaturationExposure(img, C, Wsum):
     sigma = 0.2
     result = list()
@@ -29,14 +30,14 @@ def SaturationExposure(img, C, Wsum):
             E = red_exp * green_exp * blue_exp
 
 
-            prod = E * S * C[Y][X]
+            prod = E * S * C[Y][X] + 1e-12
             result[Y].append(prod)
             Wsum[Y][X] += prod
     
     return result
 
 def exponential_euclidean(canal, sigma):
-    return np.exp(-(canal - 0.5)**2 / (2 * sigma**2))
+    return np.exp(-(canal - 0.5)**2 / 0.08)
 
 def BuildW():
     #  W = {mean:[[C * S * E][]], under:[[C * S * E][]], over:[[C * S * E]]}
@@ -44,7 +45,7 @@ def BuildW():
     O = dict()
     sizeImg = cv.imread('images/' + os.listdir('images')[0])
     Wsum = np.zeros((sizeImg.shape[0], sizeImg.shape[1]))
-    R = [[0]*sizeImg.shape[1]]*sizeImg.shape[0]
+    R = [[0]*sizeImg.shape[1]]*sizeImg.shape[0] # ???
 
     for fileImg in os.listdir('images'):
         path = 'images/' + fileImg
@@ -68,10 +69,13 @@ def BuildW():
                 r[2] += Wcappello * I[2]
 
             R[Y][X] = tuple(r)
+    print(R[123][123])
 
-    cv.imshow('R', R)
+# cv.imshow('R', R)
 # cv.imshow('Mean', img_mean)
 # cv.imshow('Over', img_over)
 # cv.imshow('Under', img_under)
+
+# np.seterr(all='print')
 
 BuildW()
