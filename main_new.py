@@ -22,37 +22,131 @@ for image in images:
     
     # Contrast
     img_gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-    laplacian = cv.Laplacian(img_gray, cv.CV_32F)
-    W_contrast = np.absolute(laplacian) ** w_c
+    laplacian = cv.Laplacian(img_gray, ddepth=-1)
+    W_contrast = np.absolute(laplacian) ** w_c + 1              # + 1 per renderlo "decente"
     # C = cv.convertScaleAbs(laplacian)
     W = np.multiply(W,W_contrast)
 
     # saturation
-    W_saturation = image.std(axis=2, dtype=np.float32) ** w_s
+    W_saturation = image.std(axis=2, dtype=np.float32) ** w_s + 1               # + 1 per renderlo "decente"
     W = np.multiply(W, W_saturation)
 
     # well-exposedness
     sigma = 0.2
-    W_exposedness = np.prod(np.exp(-((image - 0.5)**2)/(2*sigma)), axis=2, dtype=np.float32) ** w_e
+    W_exposedness = np.prod(np.exp(-((image - 0.5)**2)/(2*sigma)), axis=2, dtype=np.float32) ** w_e + 1             # + 1 per renderlo "decente"
     W = np.multiply(W, W_exposedness)
 
     weights_sum += W
     weights.append(W)
 
-for i in range(len(weights)):
-    print("New Img")
-    weights[i] /= weights_sum
-    weights[i] = np.uint8(weights[i]*255)
+# Naive implementation
+def Naive(weights, weights_sum, og_Img):
+    for i in range(len(weights)):
+        # weights e' la lista contentente i pesi delle singole foto aka "W cappello"
+        weights[i] /= weights_sum
+        weights[i] = np.uint8(weights[i]*255)
 
-    b = og_Img[i][...,0]
-    g = og_Img[i][...,1]
-    r = og_Img[i][...,2]
+        b = og_Img[i][...,0]
+        g = og_Img[i][...,1]
+        r = og_Img[i][...,2]
 
-    R[...,0] += weights[i] * b
-    R[...,1] += weights[i] * g
-    R[...,2] += weights[i] * r
+        R[...,0] += weights[i] * b
+        R[...,1] += weights[i] * g
+        R[...,2] += weights[i] * r
 
-cv.imshow('R',R.astype(dtype=np.uint8))
+    R = R.astype(dtype=np.uint8)
+    cv.imshow('R',R)
+
+# Pyramid implementation
+def Pyramid(images, weights, weights_sum, show):    # RICORDA LA VARIABILE SHOW!!!!!
+    ImgLP = []
+    WeiGP = []
+    LFinal = []
+
+    for i in range(len(images)):
+        weights[i] /= weights_sum
+        weights[i] = np.uint8(weights[i]*255)
+        # Laplacian pyramid of all images
+        ImgLP.append(LPyr(GPyr(images[i], False), images[i]))
+        WeiGP.append(GPyr(weights[i], True))
+    
+
+    # Loop su ogni livello della piramide
+    for i in range(5):
+        lvlSum = np.zeros(ImgLP[0][i].shape, dtype=np.float32)
+        # Loop su ogni image
+        for j in range(len(images)):
+            lvlSum[...,0] += ImgLP[j][i][...,0] * WeiGP[j][i]
+            lvlSum[...,1] += ImgLP[j][i][...,1] * WeiGP[j][i]
+            lvlSum[...,2] += ImgLP[j][i][...,2] * WeiGP[j][i]
+
+        LFinal.append(lvlSum)
+
+#TODO: Fallo funzionare!
+    R = np.zeros(LFinal[-1].shape, dtype=np.float32)
+    for i in range(4, 0, -1):
+        size = (LFinal[i-1].shape[1], LFinal[i-1].shape[0])
+        up = cv.pyrUp(LFinal[i], dstsize=size)
+        R = cv.add(up, R)
+
+
+    # Show Pyramid
+    if show:
+        # imageNumber = 0
+        # for i in range(len(ImgLP)):
+        #     windowNumber = 0
+        #     for img in ImgLP[i]:
+        #         windowName = str(imageNumber) +  " " + str(windowNumber) + " Laplacian"
+        #         cv.imshow(windowName, img)
+        #         windowNumber += 1
+
+        #     windowNumber = 0
+        #     for img in WeiGP[i]:
+        #         windowName = str(imageNumber) + " " + str(windowNumber) + " Gaussian"
+        #         cv.imshow(windowName, img)
+        #         windowNumber += 1
+
+        #     imageNumber += 1
+        label = 0
+        for i in range(len(LFinal)):
+            cv.imshow(str(label), LFinal[i])
+            label += 1
+        cv.imshow(R)
+
+
+# Builds Gaussian pyramid
+def GPyr(img, W):
+    gPyr = []
+    if W:
+        gPyr.append(img)
+        
+    lowImg = img.copy()
+    for _ in range(4):
+        lowImg = cv.pyrDown(lowImg)
+        gPyr.append(lowImg)
+    return gPyr
+
+# Builds Laplacian pyramid
+def LPyr(gPyr,img):
+    lPyr = []
+
+    for i in range(4,0,-1):
+        size = (gPyr[i-1].shape[1], gPyr[i-1].shape[0])
+        GP = cv.pyrUp(gPyr[i], dstsize=size)
+        L = cv.subtract(gPyr[i-1], GP)
+        lPyr.append(L)
+
+    lPyr.append(cv.Laplacian(img, ddepth=-1))
+    lPyr.reverse()
+    return lPyr
+
+#cv.imshow('L', cv.Laplacian(R, ddepth=-1))
+# cv.imshow('W', weights[2])
+# cv.imshow('lowR',lowR)
+Pyramid(og_Img, weights, weights_sum, True)             # RICORDA LA VARIABILE SHOW!!!!!
 cv.waitKey(0)
 
 # W = weights(images, img_demo, R, weights_sum, weights)
+
+
+#TODO: COntrolla gli indici
