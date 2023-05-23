@@ -1,6 +1,5 @@
 import cv2 as cv
 import numpy as np
-from scipy import stats
 import os
 
 images = ["images/mask_mean.jpg", "images/mask_over.jpg", "images/mask_under.jpg"]
@@ -58,7 +57,7 @@ def Naive(weights, weights_sum, og_Img):
     cv.imshow('R',R)
 
 # Pyramid implementation
-def Pyramid(images, weights, weights_sum, show):    # RICORDA LA VARIABILE SHOW!!!!!
+def Pyramid(images, weights, weights_sum, show:bool):    # RICORDA LA VARIABILE SHOW!!!!!
     ImgLP = []
     WeiGP = []
     LFinal = []
@@ -82,7 +81,6 @@ def Pyramid(images, weights, weights_sum, show):    # RICORDA LA VARIABILE SHOW!
 
         LFinal.append(lvlSum)
 
-#TODO: Fallo funzionare!
     R = np.zeros(LFinal[-1].shape, dtype=np.float32)
     for i in range(4, 0, -1):
         size = (LFinal[i-1].shape[1], LFinal[i-1].shape[0])
@@ -113,14 +111,15 @@ def Pyramid(images, weights, weights_sum, show):    # RICORDA LA VARIABILE SHOW!
             label += 1
         cv.imshow(R)
 
-
+#DEBUG: GPyr aggiunge l'immagine originale all'inizio della lista!
 # Builds Gaussian pyramid
-def GPyr(img, W):
+def GPyr(img, W:bool):
     gPyr = []
-    if W:
-        gPyr.append(img)
-        
+    #if W:
+    #    gPyr.append(img)
+    #TODO: Controlla meglio quali immagini sono dove e quante/quali effettivamente servono   
     lowImg = img.copy()
+    gPyr.append(lowImg)
     for _ in range(4):
         lowImg = cv.pyrDown(lowImg)
         gPyr.append(lowImg)
@@ -129,13 +128,11 @@ def GPyr(img, W):
 # Builds Laplacian pyramid
 def LPyr(gPyr,img):
     lPyr = []
-
     for i in range(4,0,-1):
         size = (gPyr[i-1].shape[1], gPyr[i-1].shape[0])
         GP = cv.pyrUp(gPyr[i], dstsize=size)
         L = cv.subtract(gPyr[i-1], GP)
         lPyr.append(L)
-
     lPyr.append(cv.Laplacian(img, ddepth=-1))
     lPyr.reverse()
     return lPyr
@@ -147,6 +144,3 @@ Pyramid(og_Img, weights, weights_sum, True)             # RICORDA LA VARIABILE S
 cv.waitKey(0)
 
 # W = weights(images, img_demo, R, weights_sum, weights)
-
-
-#TODO: COntrolla gli indici
