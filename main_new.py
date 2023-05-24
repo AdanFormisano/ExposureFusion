@@ -67,11 +67,11 @@ def Pyramid(images, weights, weights_sum, show:bool):    # RICORDA LA VARIABILE 
         weights[i] = np.uint8(weights[i]*255)
         # Laplacian pyramid of all images
         ImgLP.append(LPyr(GPyr(images[i], False), images[i]))
-        WeiGP.append(GPyr(weights[i], True))
+        WeiGP.append(GPyr(weights[i], True))    #DEBUG: Crea una foto in piu' rispetto a LPyr
     
 
     # Loop su ogni livello della piramide
-    for i in range(5):
+    for i in range(4):
         lvlSum = np.zeros(ImgLP[0][i].shape, dtype=np.float32)
         # Loop su ogni image
         for j in range(len(images)):
@@ -81,8 +81,9 @@ def Pyramid(images, weights, weights_sum, show:bool):    # RICORDA LA VARIABILE 
 
         LFinal.append(lvlSum)
 
-    R = np.zeros(LFinal[-1].shape, dtype=np.float32)
-    for i in range(4, 0, -1):
+#TODO: Controllare bene come fare il collapsing.
+    R = np.zeros(LFinal[-2].shape, dtype=np.float32)
+    for i in range(3, -1, -1):
         size = (LFinal[i-1].shape[1], LFinal[i-1].shape[0])
         up = cv.pyrUp(LFinal[i], dstsize=size)
         R = cv.add(up, R)
@@ -111,13 +112,11 @@ def Pyramid(images, weights, weights_sum, show:bool):    # RICORDA LA VARIABILE 
             label += 1
         cv.imshow(R)
 
-#DEBUG: GPyr aggiunge l'immagine originale all'inizio della lista!
 # Builds Gaussian pyramid
 def GPyr(img, W:bool):
     gPyr = []
     #if W:
     #    gPyr.append(img)
-    #TODO: Controlla meglio quali immagini sono dove e quante/quali effettivamente servono   
     lowImg = img.copy()
     gPyr.append(lowImg)
     for _ in range(4):
@@ -125,6 +124,7 @@ def GPyr(img, W:bool):
         gPyr.append(lowImg)
     return gPyr
 
+#TODO: Controllare che la Laplacyan pyramid finale sia corretta.
 # Builds Laplacian pyramid
 def LPyr(gPyr,img):
     lPyr = []
@@ -133,7 +133,7 @@ def LPyr(gPyr,img):
         GP = cv.pyrUp(gPyr[i], dstsize=size)
         L = cv.subtract(gPyr[i-1], GP)
         lPyr.append(L)
-    lPyr.append(cv.Laplacian(img, ddepth=-1))
+    # lPyr.append(cv.Laplacian(img, ddepth=-1))
     lPyr.reverse()
     return lPyr
 
