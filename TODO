@@ -1,0 +1,6 @@
+RELAZIONE FINALE
+- Github da cui abbiamo preso ispirazione
+- Iniziato una implementazione "Naive" per poi passare al "Multiresolution Blending"
+- Spiegare i passaggi (formule) (aka lista dei passaggi)
+- Descrivere i test eseguiti:
+  Esecuzione del programma su un set di foto (che variano in esposizione)

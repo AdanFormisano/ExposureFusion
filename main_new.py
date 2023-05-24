@@ -15,7 +15,7 @@ og_Img = []
 
 for image in images:
     image_uint = cv.imread(image)
-    image = np.float32(image_uint)/255
+    image = np.float32(image_uint)/255.0
     og_Img.append(image)
     W = np.ones(image.shape[:2], dtype=np.float32)
     
@@ -62,32 +62,33 @@ def Pyramid(images, weights, weights_sum, show:bool):    # RICORDA LA VARIABILE 
     WeiGP = []
     LFinal = []
 
-    for i in range(len(images)):
-        weights[i] /= weights_sum
-        weights[i] = np.uint8(weights[i]*255)
+    for img in range(len(images)):
+        weights[img] /= weights_sum
+        weights[img] = np.uint8(weights[img]*255)
         # Laplacian pyramid of all images
-        ImgLP.append(LPyr(GPyr(images[i], False), images[i]))
-        WeiGP.append(GPyr(weights[i], True))    #DEBUG: Crea una foto in piu' rispetto a LPyr
+        ImgLP.append(LPyr(GPyr(images[img], False), images[img]))
+        WeiGP.append(GPyr(weights[img], True))    #DEBUG: Crea una foto in piu' rispetto a LPyr
     
 
     # Loop su ogni livello della piramide
-    for i in range(4):
-        lvlSum = np.zeros(ImgLP[0][i].shape, dtype=np.float32)
+    for lvl in range(5):
+        lvlSum = np.zeros(ImgLP[0][lvl].shape, dtype=np.float32)
         # Loop su ogni image
-        for j in range(len(images)):
-            lvlSum[...,0] += ImgLP[j][i][...,0] * WeiGP[j][i]
-            lvlSum[...,1] += ImgLP[j][i][...,1] * WeiGP[j][i]
-            lvlSum[...,2] += ImgLP[j][i][...,2] * WeiGP[j][i]
+        for img in range(len(images)):
+            lvlSum[...,0] += ImgLP[img][lvl][...,0] * WeiGP[img][lvl]
+            lvlSum[...,1] += ImgLP[img][lvl][...,1] * WeiGP[img][lvl]
+            lvlSum[...,2] += ImgLP[img][lvl][...,2] * WeiGP[img][lvl]
 
         LFinal.append(lvlSum)
 
-#TODO: Controllare bene come fare il collapsing.
-    R = np.zeros(LFinal[-2].shape, dtype=np.float32)
-    for i in range(3, -1, -1):
-        size = (LFinal[i-1].shape[1], LFinal[i-1].shape[0])
-        up = cv.pyrUp(LFinal[i], dstsize=size)
-        R = cv.add(up, R)
-
+    R = LFinal[-1].copy()
+    # R = np.uint8(R)
+    for Llvl in range(4, 0, -1):
+        if Llvl == 4:
+            cv.imshow("PRE R", R)
+        size = (LFinal[Llvl-1].shape[1], LFinal[Llvl-1].shape[0])
+        up = cv.pyrUp(R, dstsize=size)
+        R = cv.add(up, LFinal[Llvl-1], dtype=cv.CV_8UC3)
 
     # Show Pyramid
     if show:
@@ -110,7 +111,7 @@ def Pyramid(images, weights, weights_sum, show:bool):    # RICORDA LA VARIABILE 
         for i in range(len(LFinal)):
             cv.imshow(str(label), LFinal[i])
             label += 1
-        cv.imshow(R)
+        cv.imshow("R",R)
 
 # Builds Gaussian pyramid
 def GPyr(img, W:bool):
@@ -128,6 +129,7 @@ def GPyr(img, W:bool):
 # Builds Laplacian pyramid
 def LPyr(gPyr,img):
     lPyr = []
+    lPyr.append(gPyr[-1])
     for i in range(4,0,-1):
         size = (gPyr[i-1].shape[1], gPyr[i-1].shape[0])
         GP = cv.pyrUp(gPyr[i], dstsize=size)
