@@ -1,81 +1,46 @@
+import os
 import cv2 as cv
 import numpy as np
-from scipy import stats
-import os
+from exposure_fusion import ExposureFusion
 
-dictImg = dict()
-
-
-
-def Constrast(img):
-    img_gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
-    laplacian = cv.Laplacian(img_gray, cv.CV_32F)
-    C = cv.convertScaleAbs(laplacian)
-
-    return C
-
-# TODO: sposta sigma dentro a exponential_euclidean
-def SaturationExposure(img, C, Wsum):
-    sigma = 0.2
-    result = list()
+def open_images(images_dir: str = './images') -> list[np.ndarray]:
+    images = []
     
-    for Y in range(len(img)):
-        result.append([])
-        for X in range(len(img[0])):
-            S = stats.tstd(img[Y][X])
-            B, R, G = img[Y][X][0], img[Y][X][1], img[Y][X][2]
-            red_exp = exponential_euclidean(R, sigma)
-            green_exp = exponential_euclidean(G, sigma)
-            blue_exp = exponential_euclidean(B, sigma)
-            E = red_exp * green_exp * blue_exp
+    # Checks on the input
+    try:
+        # Check if the path exists
+        if not os.path.exists(images_dir):
+            raise NotADirectoryError
+        # Checks if the directory is empty
+        elif len(os.listdir(images_dir)) == 0:
+            raise FileNotFoundError(f"Directory {images_dir} is empty")
+        
+        # Checks if the files are .jpg
+        for file in os.listdir(images_dir):
+            if os.path.splitext(file)[1] != '.jpg':
+                raise FileNotFoundError(f"File {file} is not a jpg")
+            
+            # Read image and convert to float32 for processing
+            image = np.float32(cv.imread(images_dir + '/' +file)) / 255.0
+            images.append(image)
 
+    except NotADirectoryError:
+        print(f"Input Error: Directory '{images_dir}' doesn't exist.")
+    except FileNotFoundError as e:
+        print(f"Input Error: {e}")
+        
+    return images
+  
+def main():
+    #TODO: Add path for the images
+    image_float32 = open_images('./images')
+    # The two modes are 'pyramids' or 'naive'
+    mode = 'naive'
+    fusion = ExposureFusion(mode)
+    hdr = fusion(image_float32)
+    cv.imshow(f"Final HDR image, {mode.upper()}", hdr)
+    cv.imwrite(f"./out/{mode.upper()}.jpg", hdr)
 
-            prod = E * S * C[Y][X] + 1e-12
-            result[Y].append(prod)
-            Wsum[Y][X] += prod
-    
-    return result
-
-def exponential_euclidean(canal, sigma):
-    return np.exp(-(canal - 0.5)**2 / 0.08)
-
-def BuildW():
-    #  W = {mean:[[C * S * E][]], under:[[C * S * E][]], over:[[C * S * E]]}
-    W = dict()
-    O = dict()
-    sizeImg = cv.imread('images/' + os.listdir('images')[0])
-    Wsum = np.zeros((sizeImg.shape[0], sizeImg.shape[1]))
-    R = [[0]*sizeImg.shape[1]]*sizeImg.shape[0] # ???
-
-    for fileImg in os.listdir('images'):
-        path = 'images/' + fileImg
-        imgName = fileImg[:-4]
-        img = cv.imread(path)
-
-        O[imgName] = img
-
-        # Inserisce una lista per ogni foto
-        W[imgName] = SaturationExposure(img, Constrast(img), Wsum)
-    
-    for Y in range(sizeImg.shape[0]):
-        for X in range(sizeImg.shape[1]):
-            r = [0,0,0]
-            for img in O:
-                I = O[img][Y][X]
-                Wcappello = W[img][Y][X]/Wsum[Y][X]
-                # print(type(Wcappello), type(I[0]), type(img))
-                r[0] += Wcappello * I[0]
-                r[1] += Wcappello * I[1]
-                r[2] += Wcappello * I[2]
-
-            R[Y][X] = tuple(r)
-    print(R[123][123])
-
-# cv.imshow('R', R)
-# cv.imshow('Mean', img_mean)
-# cv.imshow('Over', img_over)
-# cv.imshow('Under', img_under)
-
-# np.seterr(all='print')
-
-BuildW()
+if __name__ == "__main__":
+    main()
+    cv.waitKey(0)

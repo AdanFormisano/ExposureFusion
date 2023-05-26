@@ -4,3 +4,8 @@ RELAZIONE FINALE
 - Spiegare i passaggi (formule) (aka lista dei passaggi)
 - Descrivere i test eseguiti:
   Esecuzione del programma su un set di foto (che variano in esposizione)
+
+
+CODE
+- Extension check (only .jpg) #TODO: Controllare perche' .png non funziona
+- Almeno 3 foto
