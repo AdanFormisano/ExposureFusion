@@ -9,3 +9,4 @@ RELAZIONE FINALE
 CODE
 - Extension check (only .jpg) #TODO: Controllare perche' .png non funziona
 - Almeno 3 foto
+- Nel caso in cui le foto abbiano dimensione diversa forse si puo' prendere la foto più piccola e ridimensionare quelle piu' grandi
