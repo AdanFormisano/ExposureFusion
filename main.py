@@ -33,13 +33,14 @@ def open_images(images_dir: str = './images') -> list[np.ndarray]:
   
 def main():
     #TODO: Add path for the images
-    image_float32 = open_images('./images')
+    image_float32 = open_images('./images1')
     # The two modes are 'pyramids' or 'naive'
     mode = 'naive'
     fusion = ExposureFusion(mode)
     hdr = fusion(image_float32)
+    
     cv.imshow(f"Final HDR image, {mode.upper()}", hdr)
-    cv.imwrite(f"./out/{mode.upper()}.jpg", hdr)
+    cv.imwrite(f"./out/{mode.upper()}.jpg", hdr)    #TODO: Create better lables for the files
 
 if __name__ == "__main__":
     main()
