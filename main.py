@@ -1,7 +1,13 @@
 import os
+import argparse
 import cv2 as cv
 import numpy as np
 from exposure_fusion import ExposureFusion
+
+parser = argparse.ArgumentParser()
+parser.add_argument('mode', type=str)
+args = parser.parse_args()
+mode = args.mode
 
 def open_images(images_dir: str = './images') -> list[np.ndarray]:
     images = []
@@ -31,17 +37,28 @@ def open_images(images_dir: str = './images') -> list[np.ndarray]:
         
     return images
   
-def main():
+def main(mode):
     #TODO: Add path for the images
-    image_float32 = open_images('./images1')
-    # The two modes are 'pyramids' or 'naive'
-    mode = 'naive'
+    image_float32 = open_images('./images')
     fusion = ExposureFusion(mode)
-    hdr = fusion(image_float32)
+    try:
+        if mode=="pyramid":
+            hdr, canvas = fusion(image_float32)
+            cv.imshow(f"Final HDR image, {mode.upper()}", hdr)
+            cv.imshow(f"Laplacan Pyramids", canvas)
+            cv.imwrite(f"./out/{mode.upper()}.jpg", hdr, [cv.IMWRITE_JPEG_QUALITY, 100])    #TODO: Create better lables for the files
+            cv.imwrite(f"./out/{mode.upper()}_pyramid.jpg", canvas, [cv.IMWRITE_JPEG_QUALITY, 100])
+        elif mode == "naive":
+            hdr = fusion(image_float32)
+            cv.imshow(f"Final HDR image, {mode.upper()}", hdr)
+            cv.imwrite(f"./out/{mode.upper()}.jpg", hdr, [cv.IMWRITE_JPEG_QUALITY, 100])
+        else:
+            raise ValueError
+    except ValueError as e:
+        print(f"{type(e).__name__}: '{mode}' mode doesn't exist. Try between 'naive' or 'pyramids'")
     
-    cv.imshow(f"Final HDR image, {mode.upper()}", hdr)
-    cv.imwrite(f"./out/{mode.upper()}.jpg", hdr)    #TODO: Create better lables for the files
+
 
 if __name__ == "__main__":
-    main()
+    main(mode)
     cv.waitKey(0)

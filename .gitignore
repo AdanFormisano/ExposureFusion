@@ -5,3 +5,5 @@ Untitled.ipynb
 .gitignore
 .ipynb_checkpoints/Untitled-checkpoint.ipynb
 __pycache__/exposure_fusion.cpython-310.pyc
+out/NAIVE.jpg
+out/PYRAMIDS.jpg

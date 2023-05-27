@@ -3,6 +3,7 @@ import cv2 as cv
 import numpy as np
 
 from dataclasses import dataclass
+
 @dataclass
 class Exponents():
     contr: float
@@ -21,19 +22,19 @@ class ExposureFusion():
         assert sigma > 0, "Sigma must be positive."
     
     
-    def __call__(self, images: list[np.ndarray]) -> np.ndarray:
+    def __call__(self, images_original: list[np.ndarray]) -> np.ndarray:
         """
         Description
         """
         try:
-            assert len(images) >= 3, "Not enough images as input."
-            assert all([image.shape == images[0].shape for image in images]), "Images in input have different shape."
-            assert all([image.shape[-1] == 3 for image in images]), "Images in input must be 3-channeled."
+            assert len(images_original) >= 3, "Not enough images as input."
+            assert all([image.shape == images_original[0].shape for image in images_original]), "Images in input have different shape."
+            assert all([image.shape[-1] == 3 for image in images_original]), "Images in input must be 3-channeled."
         except AssertionError as e:
             print(f"Invalid input: {e}")
         
         # Copy original images
-        images = [image.copy() for image in images] #TODO: Check if really necessary
+        images = [image.copy() for image in images_original]        #TODO: Check if really necessary
         
         try:
             weights = self.calc_weights(images)
@@ -42,14 +43,18 @@ class ExposureFusion():
                 pyramids_gauss, pyramids_lap =  self.build_pyramids(images, weights)
                 pyramid_final = self.blend_pyramids(pyramids_gauss, pyramids_lap, len(images))
                 final_image = self.collapse_pyramid(pyramid_final)
+                canvas_laplacian = self.make_canvas(pyramids_gauss[1])
+                
+                return final_image, canvas_laplacian
+            
             elif self.mode == "naive":
-                final_image = self.blend_naive(images, weights)
+                final_image = self.blend_naive(images, weights)        
+                return final_image
+            
         except:
             raise
-        
-        return final_image
-           
-            
+              
+               
     # Calculates the 3 weights for all the images
     def calc_weights(self, images: list[np.ndarray]):
         weight_sum = np.zeros(images[0].shape[:2], dtype=np.float32)
@@ -75,7 +80,7 @@ class ExposureFusion():
     # Calculates the contrast metric used for the creation of the weight map
     def calc_weights_contrast(self, image: np.ndarray):
         image_gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-        image_laplacian = cv.Laplacian(image_gray, ddepth=-1)   #TODO: Check why ddepth = -1
+        image_laplacian = cv.Laplacian(image_gray, ddepth=-1)       #TODO: Check why ddepth = -1
         w_contrast = np.absolute(image_laplacian)
         
         return w_contrast
@@ -170,3 +175,16 @@ class ExposureFusion():
             result_image = cv.add(up_image, pyramid_final[layer-1], dtype=cv.CV_8UC3)
         
         return result_image
+    
+    def make_canvas(self, images: list[np.ndarray]):
+        max_width = images[0].shape[1]
+        max_height = images[0].shape[0]
+        
+        canvas = images[0].copy()
+        
+        current_x = 0
+        for img in images[1:]:
+            canvas[max_height - img.shape[0]:, current_x:current_x + img.shape[1]] = img
+            current_x += img.shape[1]
+        
+        return canvas
