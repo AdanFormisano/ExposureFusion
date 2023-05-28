@@ -38,12 +38,15 @@ class ExposureFusion():
         
         try:
             weights = self.calc_weights(images)
+            for i, img in enumerate(weights):
+                cv.imshow(f"weights {i}", img)
             
             if self.mode == "pyramids":
                 pyramids_gauss, pyramids_lap =  self.build_pyramids(images, weights)
                 pyramid_final = self.blend_pyramids(pyramids_gauss, pyramids_lap, len(images))
                 final_image = self.collapse_pyramid(pyramid_final)
                 canvas_laplacian = self.make_canvas(pyramids_gauss[1])
+                
                 
                 return final_image, canvas_laplacian
             
