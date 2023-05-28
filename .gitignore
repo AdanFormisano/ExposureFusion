@@ -1,10 +1,8 @@
 ExposureFusion.code-workspace
 test.ipynb
 Untitled.ipynb
-.ipynb_checkpoints/test-checkpoint.ipynb
+.ipynb_checkpoints/*
 .gitignore
-.ipynb_checkpoints/Untitled-checkpoint.ipynb
 __pycache__/exposure_fusion.cpython-310.pyc
-out/NAIVE.jpg
-out/PYRAMIDS.jpg
-.idea
+out/*
+.idea/*
