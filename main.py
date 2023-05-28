@@ -11,7 +11,7 @@ parser.add_argument('--no-gui', action="store_true", help="Runs without the GUI"
 args = parser.parse_args()
 
 
-def open_images(images_dir: str = './images') -> (int, list[np.ndarray]):
+def open_images(images_dir: str = './images') -> tuple[int, list[np.ndarray]]:
     images = []
     n_images = 0
 
