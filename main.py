@@ -45,7 +45,7 @@ def open_images(images_dir: str = './images') -> (int, list[np.ndarray]):
 
 def main(fusion_mode):
     # TODO: Add path to images
-    n_images, image_float32 = open_images('./images')
+    n_images, image_float32 = open_images('./images2')
 
     try:
         # CHECK: ExposureFusion() in try block?

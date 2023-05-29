@@ -1,21 +1,14 @@
 RELAZIONE FINALE
-+ Github da cui abbiamo preso ispirazione
-- Iniziato una implementazione "Naive" per poi passare al "Multi-resolution Blending"
-- Spiegare i passaggi (formule) (aka lista dei passaggi)
-- Descrivere i test eseguiti:
-  Esecuzione del programma su un set di foto (che variano in esposizione)
-- La relazione deve, FORSE, essere aggiornata una volta che la GUI è stata implementata
-- Aggiungere foto originali (possibilmente allineate)
-
+- Aggiungere foto originali libreria
+- Aggiustare spaziatura formule nella introduzione
 
 CODE
-+ Extension check (only .jpg)
-+ Almeno 3 foto
-- Nel caso in cui le foto abbiano dimensione diversa forse si puo' prendere la foto più piccola e ridimensionare quelle piu' grandi
-+ Usare enumerate in alcuni casi
-- Poter convertire png in jpg
-    - Nel caso in cui le immagini non siano .jpg chiedere all'utente se le vuole convertire?
-- FORSE provare a fare il blending singolarmente per ogni canale
 - GUI e nogui
-- Method for printing weight maps and/or laplacians?
-- Logger needed?
+- Nuove features GUI
+- Tempo di esecuzione
+- Controllare quali immagini vengono salvate/rappresentate
+- Sistemare la gestione degli errori
+--------------------
+PRE-CONSEGNA
+- Sistemare la cartella
+- Creare .zip
