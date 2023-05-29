@@ -1,33 +1,94 @@
 import tkinter as tk
+import os
+import cv2 as cv
+import numpy as np
 from tkinter import filedialog
-from PIL import ImageTk, Image
+from tkinter import ttk
+from tkinter import filedialog as fd
+from tkinter.messagebox import showinfo
+from exposure_fusion import ExposureFusion
 
-def load_images():
-    file_paths = filedialog.askopenfilenames(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg")])
-    if file_paths:
-        for file_path in file_paths:
-            image = Image.open(file_path)
-            image = image.resize((300, 200))  # Resize the image as desired
-            photo = ImageTk.PhotoImage(image)
-            image_labels.append(tk.Label(window, image=photo))
-            image_labels[-1].image = photo  # Store a reference to the image to prevent it from being garbage collected
-            image_labels[-1].pack(pady=10)
 
-# Create a new instance of Tkinter window
-window = tk.Tk()
+class TheGUI:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.geometry("800x500")
+        self.root.title("Exposure Fusion GUI")
+        self.imagefolderpath = tk.StringVar()
+        self.implementation = tk.StringVar()
 
-# Set the window title
-window.title("Image Loader")
+        self.open_button_naive = ttk.Button(
+            self.root,
+            text='Select folder for Naive Exposure Fusion',
+            command=lambda: self.select_folder('naive')
+        )
+        self.open_button_naive.pack(expand=True, padx=20, pady=10)
 
-# Set the window dimensions
-window.geometry("400x300")
+        self.open_button_pyramid = ttk.Button(
+            self.root,
+            text='Select folder for Pyramid Exposure Fusion',
+            command=lambda: self.select_folder('pyramids')
+        )
+        self.open_button_pyramid.pack(expand=True, padx=20, pady=10)
 
-# Create a button to load images
-load_button = tk.Button(window, text="Load Images", command=load_images)
-load_button.pack(pady=10)
+        self.root.mainloop()
 
-# Create a list to store the image labels
-image_labels = []
+    def select_folder(self, implementation):
+        foldername = filedialog.askdirectory()  # name of folder that has the images ef will be applied on
+        showinfo(
+            title='Selected Folder',
+            message=foldername
+        )
+        self.imagefolderpath.set(foldername)
+        n_images, image_float32 = open_images(foldername)
 
-# Run the Tkinter event loop
-window.mainloop()
+        fusion = ExposureFusion(implementation, n_images)
+        # Perform exposure fusion based on the selected implementation
+        if implementation == 'pyramids':
+            hdr, canvas = fusion(image_float32)
+            cv.imshow(f"Final HDR image, {implementation.upper()}", hdr)
+            cv.imshow(f"Laplacian Pyramids", canvas)
+            cv.imwrite(f"./out/{implementation.upper()}.jpg", hdr,
+                       [cv.IMWRITE_JPEG_QUALITY, 100])  # TODO: Create better labels for the files
+            cv.imwrite(f"./out/{implementation.upper()}_pyramid.jpg", canvas, [cv.IMWRITE_JPEG_QUALITY, 100])
+            pass
+        elif implementation == 'naive':
+            hdr = fusion(image_float32)
+            cv.imshow(f"Final HDR image, {implementation.upper()}", hdr)
+            cv.imwrite(f"./out/{implementation.upper()}.jpg", hdr, [cv.IMWRITE_JPEG_QUALITY, 100])
+            pass
+
+
+def open_images(images_dir: str = './images') -> (int, list[np.ndarray]):
+    images = []
+    n_images = 0
+
+    # Runs checks on the input
+    try:
+        # Check if the path exists
+        if not os.path.exists(images_dir):
+            raise NotADirectoryError
+
+        # Checks if the directory is empty
+        elif len(os.listdir(images_dir)) == 0:
+            raise FileNotFoundError(f"Directory {images_dir} is empty")
+
+        # Checks if the files are .jpg
+        for file in os.listdir(images_dir):
+            if os.path.splitext(file)[1] != '.jpg':
+                raise FileNotFoundError(f"File {file} is not a jpg")
+
+            # Read image and convert to float32 for processing
+            image = np.float32(cv.imread(f"{images_dir}/{file}")) / 255.0
+            images.append(image)
+            n_images += 1
+
+    except NotADirectoryError:
+        print(f"Input Error: Directory '{images_dir}' doesn't exist.")
+    except FileNotFoundError as e:
+        print(f"Input Error: {e}")
+
+    return n_images, images
+
+
+myname = TheGUI()
