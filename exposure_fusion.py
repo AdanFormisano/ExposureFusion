@@ -1,7 +1,41 @@
+import sys
+import os
+
 import cv2 as cv
 import numpy as np
 
 from dataclasses import dataclass
+
+
+def open_images(images_dir: str) -> tuple[int, list[np.ndarray]]:
+    images = []
+    n_images = 0
+
+    # Runs checks on the input
+    try:
+        # Check if the path exists
+        if not os.path.exists(images_dir):
+            raise ValueError
+
+        # Checks if the directory is empty
+        elif len(os.listdir(images_dir)) == 0:
+            raise FileNotFoundError(f"Directory {images_dir} is empty")
+
+        else:
+            # Checks if the files are .jpg
+            for file in os.listdir(images_dir):
+                if os.path.splitext(file)[1] != '.jpg':
+                    raise FileNotFoundError(f"File {file} is not a jpg")
+
+                # Read image and convert to float32 for processing
+                image = np.float32(cv.imread(f"{images_dir}/{file}")) / 255.0
+                images.append(image)
+                n_images += 1
+
+            return n_images, images
+
+    except Exception:
+        raise
 
 
 @dataclass
@@ -21,23 +55,21 @@ class ExposureFusion:
         self.pyramid_layers: int = pyramid_layers
         self.exponents: Exponents = exp
 
-        assert pyramid_layers >= 1, "Pyramid levels must be at least 1."
-        assert sigma > 0, "Sigma must be positive."
-        assert n_images > 1, "There must be at least one image."
-
     def __call__(self, images_original: list[np.ndarray]):
         # Checks the input images
         try:
-            assert len(images_original) >= 3, "Not enough images as input."
+            assert self.n_images >= 3, "Not enough images as input."
             assert all([image.shape == images_original[0].shape for image in
                         images_original]), "Images in input have different shape."
             assert all([image.shape[-1] == 3 for image in images_original]), "Images in input must be 3-channeled."
         except AssertionError as e:
             print(f"Invalid input: {e}")
+            sys.exit()   # CHECK: Eccessivo? Potrebbe non funzionare come voluto quando si usa la GUI
 
         # Copy original images
         images = [image.copy() for image in images_original]    # CHECK: is it needed to do a copy?
 
+        # CHECK: Anche qui forse il try block non serve?
         try:
             weights = self.calc_weights(images)
 
@@ -50,9 +82,9 @@ class ExposureFusion:
                 final_image = self.collapse_pyramid(pyramid_final)
 
                 # Creates an image with all the pyramid layers represented in it
-                canvas_pyramid = self.make_canvas(pyramids_gauss[1])
+                # canvas_pyramid = self.make_canvas(pyramids_gauss[1])
 
-                return final_image, canvas_pyramid
+                return final_image
 
             elif self.mode == "naive":
                 # Creates the final image using the naive method for the fusion
