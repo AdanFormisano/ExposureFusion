@@ -1,75 +1,59 @@
 import os
 import argparse
 import cv2 as cv
-import numpy as np
+import time
+
+import exposure_fusion
 from exposure_fusion import ExposureFusion
+import gui
 
 parser = argparse.ArgumentParser()
-parser.add_argument('run_mode', type=str, help="Selects which mode to use for the exposure fusion: 'naive' or \
+# group = parser.add_mutually_exclusive_group()
+parser.add_argument('-m', '--mode', type=str, choices=["naive", "pyramids"], help="selects which mode to use for the exposure fusion: 'naive' or \
                     'pyramids'")
-parser.add_argument('--no-gui', action="store_true", help="Runs without the GUI")
+parser.add_argument('ui', type=str, default="no-gui", choices=["gui", "no-gui"], metavar='mode',
+                    help="selects whether to run or not with the GUI")
+parser.add_argument('-p', '--path', type=str, help="path to the set of images to elaborate")
 args = parser.parse_args()
 
 
-def open_images(images_dir: str = './images') -> tuple[int, list[np.ndarray]]:
-    images = []
-    n_images = 0
+def run_script():
+    fusion_mode = args.mode
+    image_path = args.path
 
-    # Runs checks on the input
     try:
-        # Check if the path exists
-        if not os.path.exists(images_dir):
-            raise NotADirectoryError
-
-        # Checks if the directory is empty
-        elif len(os.listdir(images_dir)) == 0:
-            raise FileNotFoundError(f"Directory {images_dir} is empty")
-
-        # Checks if the files are .jpg
-        for file in os.listdir(images_dir):
-            if os.path.splitext(file)[1] != '.jpg':
-                raise FileNotFoundError(f"File {file} is not a jpg")
-
-            # Read image and convert to float32 for processing
-            image = np.float32(cv.imread(f"{images_dir}/{file}")) / 255.0
-            images.append(image)
-            n_images += 1
-
-    except NotADirectoryError:
-        print(f"Input Error: Directory '{images_dir}' doesn't exist.")
+        n_images, image_float32 = exposure_fusion.open_images(image_path)
+    except ValueError:
+        print(f"Input Error: Directory '{image_path}' doesn't exist.")
     except FileNotFoundError as e:
         print(f"Input Error: {e}")
 
-    return n_images, images
+    else:
+        # Starts counter for the elapsed time
+        start_time = time.perf_counter()
 
-
-def main(fusion_mode):
-    # TODO: Add path to images
-    n_images, image_float32 = open_images('./images2')
-
-    try:
-        # CHECK: ExposureFusion() in try block?
         fusion = ExposureFusion(fusion_mode, n_images)
+        # Runs the exposure fusion
+        hdr = fusion(image_float32)
 
-        if fusion_mode == "pyramids":
-            hdr, canvas = fusion(image_float32)
-            cv.imshow(f"Final HDR image, {fusion_mode.upper()}", hdr)
-            cv.imshow(f"Laplacian Pyramids", canvas)
-            cv.imwrite(f"./out/{fusion_mode.upper()}.jpg", hdr,
-                       [cv.IMWRITE_JPEG_QUALITY, 100])  # TODO: Create better labels for the files
-            cv.imwrite(f"./out/{fusion_mode.upper()}_pyramid.jpg", canvas, [cv.IMWRITE_JPEG_QUALITY, 100])
+        print(f"--- Done in {round(time.perf_counter() - start_time, 3)} seconds ---")
 
-        elif fusion_mode == "naive":
-            hdr = fusion(image_float32)
-            cv.imshow(f"Final HDR image, {fusion_mode.upper()}", hdr)
-            cv.imwrite(f"./out/{fusion_mode.upper()}.jpg", hdr, [cv.IMWRITE_JPEG_QUALITY, 100])
+        # Displays final image
+        cv.imshow(f"Final HDR image {fusion_mode.upper()}", hdr)
+        cv.imwrite(f"./out/{os.path.split(image_path)[-1]}-{fusion_mode.upper()}.jpg", hdr,
+                   [cv.IMWRITE_JPEG_QUALITY, 100])
 
-        else:
-            raise ValueError
-    except ValueError as e:
-        print(f"{type(e).__name__}: '{fusion_mode}' mode doesn't exist. Try between 'naive' or 'pyramids'")
+
+def main():
+    # If --no-gui is True run the GUI
+    if args.ui == 'gui':
+        gui.GUI()
+    # Else run directly the script
+    else:
+        run_script()
+        cv.waitKey(0)
 
 
 if __name__ == "__main__":
-    main(args.run_mode)
-    cv.waitKey(0)
+    main()
+    # cv.waitKey(0)
