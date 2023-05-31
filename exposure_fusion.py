@@ -64,7 +64,6 @@ class ExposureFusion:
             assert all([image.shape[-1] == 3 for image in images_original]), "Images in input must be 3-channeled."
         except AssertionError as e:
             print(f"Invalid input: {e}")
-            sys.exit()   # CHECK: Eccessivo? Potrebbe non funzionare come voluto quando si usa la GUI
 
         # Copy original images
         images = [image.copy() for image in images_original]    # CHECK: is it needed to do a copy?
