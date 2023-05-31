@@ -1,5 +1,4 @@
 ExposureFusion.code-workspace
 .gitignore
 __pycache__/*
-out/*
 .idea/*
