@@ -41,14 +41,13 @@ def run_script():
         # Displays final image
         cv.imshow(f"Final HDR image {fusion_mode.upper()}", hdr)
         cv.imwrite(f"./out/{os.path.split(image_path)[-1]}-{fusion_mode.upper()}.jpg", hdr,
-                   [cv.IMWRITE_JPEG_QUALITY, 100])  # TODO: Create better labels for the files
+                   [cv.IMWRITE_JPEG_QUALITY, 100])
 
 
 def main():
     # If --no-gui is True run the GUI
     if args.ui == 'gui':
         gui.GUI()
-        # TODO: Add warning message if there are arguments
     # Else run directly the script
     else:
         run_script()

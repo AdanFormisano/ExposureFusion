@@ -9,8 +9,6 @@ from PIL import ImageTk, Image
 import cv2 as cv
 import time
 
-# TODO: Clear labels before showing images
-
 
 class GUI:
     def __init__(self):
@@ -108,7 +106,6 @@ class GUI:
             self.show_thumbnails()
 
     def run_exposure_fusion(self):
-        # TODO: Insert try-except block
         self.n_images, images = exposure_fusion.open_images(self.image_path.get())
 
         start_time = time.perf_counter()
