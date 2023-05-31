@@ -1,17 +1,5 @@
-RELAZIONE FINALE
-- Aggiungere foto originali libreria
-- Aggiustare spaziatura formule nella introduzione
-- Accennare il fatto che esiste un metodo per l'allineamento che risolverebbe il nostro problema
-
 CODE
-- Nuove features GUI
-- Controllare quali immagini vengono salvate/rappresentate
 - Sistemare la gestione degli errori
-
-- Main controlla l'opzione --no-gui: se ci sta allora ExposureFusione viene avviato da GUI
-                                     se non ci sta allora è main che avvia ExposureFusion
-        Questo seignifica che i controlli non possono essere fatti in main(): diversi modi per gestire gli errori dentro
-        e fuori GUI
 - Simple logging
 --------------------
 PRE-CONSEGNA
