@@ -7,8 +7,6 @@ import exposure_fusion
 from PIL import ImageTk, Image
 import cv2 as cv
 
-# TODO: have a Entry to visualize the path selected
-
 
 class GUI:
     def __init__(self):

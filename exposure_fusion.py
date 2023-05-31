@@ -68,7 +68,6 @@ class ExposureFusion:
         # Copy original images
         images = [image.copy() for image in images_original]    # CHECK: is it needed to do a copy?
 
-        # CHECK: Anche qui forse il try block non serve?
         try:
             weights = self.calc_weights(images)
 
