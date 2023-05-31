@@ -2,28 +2,41 @@ import os
 from tkinter import *
 from tkinter import filedialog
 from tkinter import ttk
+from tkinter import messagebox
 import numpy as np
 import exposure_fusion
 from PIL import ImageTk, Image
 import cv2 as cv
+import time
+
+# TODO: Clear labels before showing images
 
 
 class GUI:
     def __init__(self):
+        self.files_wrong_ext = []
+        self.time_elapsed = None
+
         self.root = Tk()
-        self.root.geometry("1366x768")
+        self.root.geometry("800x500")
         self.root.title("Exposure Fusion")
+        self.root.resizable(False, False)
+
         self.run_mode_var = StringVar()
         self.image_path = StringVar()
         self.n_images = None
         self.save_path = None
+        self.viewer_image = None
+        self.thumbnails = None
 
         self.content = ttk.Frame(self.root)
-        self.options = ttk.Frame(self.content, borderwidth=5, relief='ridge', width=100, height=200)
 
-        self.thumbnails = ttk.Frame(self.content, relief='sunken', padding=0)
-        self.viewer_image = ttk.Label(self.content, text="image", relief='ridge')
-        self.viewer_image.config(anchor='center', padding=0)
+        self.thumbnails = ttk.Frame(self.content)
+        self.viewer_image = ttk.Label(self.content)
+        self.thumbnails.grid(column=1, row=0, columnspan=3, sticky='news')
+        self.viewer_image.grid(column=1, row=1, columnspan=3, rowspan=2)
+
+        self.options = ttk.Frame(self.content)
 
         self.run_mode = ttk.Combobox(self.options, textvariable=self.run_mode_var)
         self.run_mode['values'] = ('Naive', 'Pyramids')
@@ -31,45 +44,80 @@ class GUI:
 
         self.button_dir = ttk.Button(self.options, text="Select folder",
                                      command=lambda: self.load_folder())
-        self.path = ttk.Entry(self.options, textvariable=self.image_path, width=50)
+        self.path = ttk.Entry(self.options, textvariable=self.image_path)
 
         self.button_run = ttk.Button(self.content, text="RUN",
                                      command=lambda: self.run_exposure_fusion())
 
+        # Grid geometry manager
         self.content.grid(column=0, row=0, sticky='news')
-        self.thumbnails.grid(column=1, row=0)
-        self.options.grid(column=0, row=0, rowspan=3, sticky='nsew')
-        self.viewer_image.grid(column=1, row=1, sticky='news')
-        self.run_mode.grid(column=0, row=2, padx=20, sticky='ew')
-        self.button_dir.grid(column=0, row=1)
-        self.path.grid(column=0, row=0)
-        self.button_run.grid(column=0, row=2, sticky='s', pady=(0, 20))
+
+        self.options.grid(column=0, row=0, rowspan=2, sticky='nsew')
+        self.button_dir.grid(column=1, row=0, pady=10, padx=(5, 10))
+        self.path.grid(column=0, row=0, pady=10, padx=(10, 5), sticky='we')
+        self.run_mode.grid(column=0, row=1, pady=10, padx=10, sticky='w')
+
+        self.button_run.grid(column=0, row=2, pady=10)
 
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
         self.content.columnconfigure(0, weight=1)
-        self.content.columnconfigure(1, weight=10)
+        self.content.columnconfigure(1, weight=5)
+        self.content.columnconfigure(2, weight=5)
+        self.content.columnconfigure(3, weight=5)
         self.content.rowconfigure(0, weight=1)
-        self.content.rowconfigure(1, weight=10)
-
-        self.options.columnconfigure(0, weight=1)
+        self.content.rowconfigure(1, weight=1)
 
         self.thumbnails.columnconfigure(0, weight=1)
         self.thumbnails.columnconfigure(1, weight=1)
         self.thumbnails.columnconfigure(2, weight=1)
         self.thumbnails.rowconfigure(0, weight=1)
 
+        self.options.columnconfigure(0, weight=5)
+        # self.options.rowconfigure(0, weight=1)
+        # self.options.rowconfigure(1, weight=1)
+        # self.options.rowconfigure(2, weight=1)
+
         self.root.mainloop()
+
+    def check_ext(self):
+        for file in os.listdir(self.image_path.get()):
+            if not file.endswith('.jpg'):
+                self.files_wrong_ext.append(file)
 
     def load_folder(self):
         self.image_path.set(filedialog.askdirectory(initialdir='./'))
-        self.show_thumbnails()
+        self.check_ext()
+
+        if not len(os.listdir(self.image_path.get())) >= 3:
+            messagebox.showinfo(message='ERROR: Not enough images!\nPlease select a folder that has at least 3 images.',
+                                title="ERROR", icon="error")
+
+        elif self.files_wrong_ext:
+            print(f"{self.files_wrong_ext}")
+            messagebox.showinfo(message=f"ERROR: {*self.files_wrong_ext,} are not JPG!"
+                                        f" Please select a folder with only JPG images.",
+                                title="ERROR", icon="error")
+            self.files_wrong_ext = []
+        else:
+            self.thumbnails.forget()
+            self.thumbnails = ttk.Frame(self.content)
+            self.thumbnails.grid(column=1, row=0, columnspan=3, sticky='news')
+            self.thumbnails.grid_propagate(False)
+            self.show_thumbnails()
 
     def run_exposure_fusion(self):
+        # TODO: Insert try-except block
         self.n_images, images = exposure_fusion.open_images(self.image_path.get())
+
+        start_time = time.perf_counter()
+
         fusion = exposure_fusion.ExposureFusion(self.run_mode_var.get().lower(), self.n_images)
         hdr = fusion(images)
+
+        self.time_elapsed = time.perf_counter() - start_time
+        self.viewer_image.destroy()
         self.save_image(hdr)
 
     def save_image(self, image: np.ndarray):
@@ -83,23 +131,29 @@ class GUI:
 
     def show_image(self):
         img = Image.open(self.save_path)
-        max_width, max_height = self.viewer_image.winfo_width(), self.viewer_image.winfo_height()
+        max_width, max_height = 450, 540
         img.thumbnail((max_width, max_height), Image.ANTIALIAS)
         img = ImageTk.PhotoImage(img)
+
+        self.viewer_image = ttk.Label(self.content, relief='sunken')
+        self.viewer_image.config(anchor='center', padding=0, borderwidth=0)
+        self.viewer_image.grid(column=1, row=1, columnspan=3, rowspan=2)
 
         self.viewer_image['image'] = img
         self.viewer_image.image = img
 
+        messagebox.showinfo(message=f'Done in {round(self.time_elapsed, 3)} seconds!', title="Exposure Fusion finished",
+                            icon="info")
+
     def show_thumbnails(self):
         file_list = os.listdir(self.image_path.get())
         for i, file in enumerate(file_list):
-
             img = Image.open(f'{self.image_path.get()}/{file}')
-            img.thumbnail((200, 170), Image.ANTIALIAS)
-            print(f"{img.width},{img.height}")
+            img.thumbnail((100, 180), Image.ANTIALIAS)
             img_tk = ImageTk.PhotoImage(img)
-            t = ttk.Label(self.thumbnails, image=img_tk, padding=0, borderwidth=0, relief='ridge')
+            t = ttk.Label(self.thumbnails, relief='ridge')
+            t['image'] = img_tk
             t.image = img_tk
+            t.grid(column=i, row=0)
 
-            t.grid(column=i, row=0, ipady=0)
-            self.thumbnails.config(borderwidth=0)
+            self.thumbnails.columnconfigure(i, weight=1)

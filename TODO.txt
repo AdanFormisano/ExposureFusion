@@ -1,8 +1,0 @@
-CODE
-- Sistemare la gestione degli errori
-- Simple logging
---------------------
-PRE-CONSEGNA
-- Sistemare la cartella
-- Creare .zip
-- Creare 'requirements.txt'

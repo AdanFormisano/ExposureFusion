@@ -1,8 +1,5 @@
 ExposureFusion.code-workspace
-test.ipynb
-Untitled.ipynb
-.ipynb_checkpoints/*
 .gitignore
-__pycache__/exposure_fusion.cpython-310.pyc
+__pycache__/*
 out/*
 .idea/*

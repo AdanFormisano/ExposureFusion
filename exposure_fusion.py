@@ -1,9 +1,6 @@
-import sys
 import os
-
 import cv2 as cv
 import numpy as np
-
 from dataclasses import dataclass
 
 
@@ -66,7 +63,7 @@ class ExposureFusion:
             print(f"Invalid input: {e}")
 
         # Copy original images
-        images = [image.copy() for image in images_original]    # CHECK: is it needed to do a copy?
+        images = [image.copy() for image in images_original]
 
         try:
             weights = self.calc_weights(images)
@@ -118,7 +115,7 @@ class ExposureFusion:
     def calc_weights_contrast(self, image: np.ndarray) -> np.ndarray:
         """Calculates the contrast metric used for the creation of the weight map."""
         image_gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-        image_laplacian = cv.Laplacian(image_gray, ddepth=-1)  # TODO: Check why ddepth = -1
+        image_laplacian = cv.Laplacian(image_gray, ddepth=-1)
         w_contrast = np.absolute(image_laplacian)
 
         return w_contrast
